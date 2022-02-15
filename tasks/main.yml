@@ -16,7 +16,7 @@
 
 - name: "Set Fact for Install Status (RedHat)"
   ansible.builtin.set_fact:
-    clamav_install: true
+    clamav_install: false
   when: repo_count.stdout != "0" or ansible_os_family == 'Debian'
 
 - name: "Install ClamAV packages"
