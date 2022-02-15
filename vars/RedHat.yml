@@ -3,6 +3,6 @@
 
 clamav_packages:
   - clamav
-  - clamav-scanner-systemd
   - clamav-update
+  - clamav-scanner-systemd
   
