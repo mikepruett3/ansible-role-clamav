@@ -28,12 +28,26 @@
     - item|string not in ansible_facts.packages
     - clamav_install
 
-- name: "Configure FreshClam service"
-  block:
-    - name: "Uncomment Logfile"
-      ansible.builtin.lineinfile:
-        dest: "{{ freshclam_config }}"
-        regexp: "^#UpdateLogFile"
-        line: "^UpdateLogFile"
-        state: present
-        backup: yes
+- name: "Configure FreshClam service configuration file"
+  ansible.builtin.lineinfile:
+    dest: "{{ freshclam_config }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    backup: yes
+  with_items:
+    - regexp: "^#UpdateLogFile"
+      line: "UpdateLogFile /var/log/freshclam.log"
+    - regexp: "^#LogFileMaxSize"
+      line: "LogFileMaxSize 2M"
+    - regexp: "^#LogTime"
+      line: "LogTime yes"
+    - regexp: "^#LogSyslog"
+      line: "LogSyslog yes"
+    - regexp: "^#LogFacility"
+      line: "LogFacility LOG_MAIL"
+    - regexp: "^#LogRotate"
+      line: "LogRotate yes"
+    - regexp: "^#Checks"
+      line: "Checks 12"
+
