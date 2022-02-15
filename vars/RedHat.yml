@@ -1,0 +1,8 @@
+---
+# RedHat vars file for ansible-role-clamav/
+
+clamav_packages:
+  - clamav
+  - clamav-scanner-systemd
+  - clamav-update
+  

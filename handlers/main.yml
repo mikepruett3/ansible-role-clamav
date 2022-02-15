@@ -1,2 +1,10 @@
 ---
 # handlers file for ansible-role-clamav/
+
+- name: "Restart ClamAV Daemon Service"
+  ansible.builtin.service:
+    name: "{{ clamav_service }}"
+    state: restarted
+  when: >
+    clamav_service_started is not defined or
+    not clamav_service_started.changed
