@@ -26,5 +26,5 @@
   with_items: "{{ clamav_packages }}"
   when:
     - item|string not in ansible_facts.packages
-    - clamav_install is true
+    - clamav_install
 
