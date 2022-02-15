@@ -14,9 +14,17 @@
   register: repo_count
   when: ansible_os_family == 'RedHat'
 
-#- name: "Install ClamAV packages"
-#  ansible.builtin.package:
-#    name: "{{ item }}"
-#    state: present
-#  with_items: "{{ clamav_packages }}"
-#  when: item|string not in ansible_facts.packages
+- name: "Set Fact for Install Status (RedHat)"
+  ansible.builtin.set_fact:
+    clamav_install: true
+  when: repo_count.stdout != "0" or ansible_os_family == 'Debian'
+
+- name: "Install ClamAV packages"
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ clamav_packages }}"
+  when:
+    - item|string not in ansible_facts.packages
+    - clamav_install is true
+
