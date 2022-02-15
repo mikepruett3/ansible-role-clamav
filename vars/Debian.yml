@@ -5,4 +5,5 @@ clamav_packages:
   - clamav
   - clamav-daemon
   - clamav-freshclam
-  
+
+freshclam_config: /etc/freshclam.conf

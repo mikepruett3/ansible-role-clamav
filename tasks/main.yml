@@ -9,12 +9,12 @@
     manager: auto
   when: ansible_facts.packages is not defined
 
-- name: "Check for EPEL Repository (RedHat)"
+- name: "Check for EPEL repository (RedHat)"
   ansible.builtin.shell: sudo yum repolist epel* | grep -i "repolist" | awk '{ print $2 }'
   register: repo_count
   when: ansible_os_family == 'RedHat'
 
-- name: "Set Fact for Install Status (RedHat)"
+- name: "Set facts for install status (RedHat)"
   ansible.builtin.set_fact:
     clamav_install: true
   when: repo_count.stdout != "0" or ansible_os_family == 'Debian'
@@ -28,3 +28,12 @@
     - item|string not in ansible_facts.packages
     - clamav_install
 
+- name: "Configure FreshClam service"
+  block:
+    - name: "Uncomment Logfile"
+      ansible.builtin.lineinfile:
+        dest: "{{ freshclam_config }}"
+        regexp: "^#UpdateLogFile"
+        line: "^UpdateLogFile"
+        state: present
+        backup: yes

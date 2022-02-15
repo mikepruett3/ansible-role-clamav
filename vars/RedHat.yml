@@ -5,4 +5,5 @@ clamav_packages:
   - clamav
   - clamav-update
   - clamav-scanner-systemd
-  
+
+freshclam_config: /etc/freshclam.conf
