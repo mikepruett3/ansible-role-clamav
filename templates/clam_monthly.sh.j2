@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#{{ ansible_managed | comment }}
+
+EMAIL_MSG="Please see the log file attached.";
+EMAIL_SUBJECT="ClamAV Monthly Scan Results";
+EMAIL_FROM="{{ email_from }}";
+EMAIL_TO="{{ email_to }}";
+MAIL_SERVER="{{ smtp_server }}:{{ smtp_port }}"
+
+$(command -v clamdscan) --multiscan --fdpass --log /tmp/scanlog.txt /
+echo "$EMAIL_MSG" | mail -a /tmp/scanlog.txt -s "$EMAIL_SUBJECT" -r "$EMAIL_FROM"  -S smtp="$MAIL_SERVER" "$EMAIL_TO"
+rm -f /tmp/filelist.txt
+rm -f /tmp/scanlog.txt

@@ -6,4 +6,22 @@ clamav_packages:
   - clamav-update
   - clamav-scanner-systemd
 
+freshclam_service: clamav-freshclam
+
 freshclam_config: /etc/freshclam.conf
+freshclam_log: /var/log/freshclam.log
+freshclam_logmaxsize: "2M"
+freshclam_logtime: "yes"
+freshclam_syslog: "yes"
+freshclam_logfacility: "LOG_MAIL"
+freshclam_logrotate: "yes"
+freshclam_checks: 12
+
+clamd_config: /etc/clamd.d/scan.conf
+clamd_logfile: /var/log/clamd.scan
+clamd_logmaxsize: "2M"
+clamd_logtime: "yes"
+clamd_syslog: "yes"
+clamd_logfacility: "LOG_MAIL"
+clamd_logrotate: "yes"
+clamd_localsocket: /run/clamd.scan/clamd.sock

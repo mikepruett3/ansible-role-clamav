@@ -19,6 +19,13 @@
     clamav_install: true
   when: repo_count.stdout != "0" or ansible_os_family == 'Debian'
 
+- name: "Enable Antivirus File Scan SELinux Boolean"
+  ansible.posix.seboolean:
+    name: antivirus_can_scan_system
+    state: yes
+    persistent: yes
+  when: ansible_selinux.status == 'enabled'
+
 - name: "Install ClamAV packages"
   ansible.builtin.package:
     name: "{{ item }}"
@@ -37,17 +44,103 @@
     backup: yes
   with_items:
     - regexp: "^#UpdateLogFile"
-      line: "UpdateLogFile /var/log/freshclam.log"
+      line: "UpdateLogFile {{ freshclam_log }}"
     - regexp: "^#LogFileMaxSize"
-      line: "LogFileMaxSize 2M"
+      line: "LogFileMaxSize {{ freshclam_logmaxsize }}"
     - regexp: "^#LogTime"
-      line: "LogTime yes"
+      line: "LogTime {{ freshclam_logtime }}"
     - regexp: "^#LogSyslog"
-      line: "LogSyslog yes"
+      line: "LogSyslog {{ freshclam_syslog }}"
     - regexp: "^#LogFacility"
-      line: "LogFacility LOG_MAIL"
+      line: "LogFacility {{ freshclam_logfacility }}"
     - regexp: "^#LogRotate"
-      line: "LogRotate yes"
+      line: "LogRotate {{ freshclam_logrotate }}"
     - regexp: "^#Checks"
-      line: "Checks 12"
+      line: "Checks {{ freshclam_checks }}"
+  when: clamav_install
 
+- name: "Update ClamAV Database"
+  block:
+    - name: "Stop FreshClam Service"
+      ansible.builtin.service:
+        name: "{{ freshclam_service }}"
+        state: stopped
+    - name: "Update ClamAV Database"
+      ansible.builtin.shell: freshclam --quiet
+    - name: "Start FreshClam Service"
+      ansible.builtin.service:
+        name: "{{ freshclam_service }}"
+        enabled: yes
+        state: started
+  when: clamav_install
+
+- name: "Configure ClamAV daemon service configuration file"
+  block:
+    - name: "Configure ClamAV daemon service configuration file"
+      ansible.builtin.lineinfile:
+        dest: "{{ clamd_config }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        backup: yes
+        with_items:
+          - regexp: "^#LogFile"
+            line: "LogFile {{ clamd_logfile }}"
+          - regexp: "^#LogFileMaxSize"
+            line: "LogFileMaxSize {{ clamd_logmaxsize }}"
+          - regexp: "^#LogTime"
+            line: "LogTime {{ clamd_logtime }}"
+          - regexp: "^#LogSyslog"
+            line: "LogSyslog {{ clamd_syslog }}"
+          - regexp: "^#LogFacility"
+            line: "LogFacility {{ clamd_logfacility }}"
+          - regexp: "^#LogRotate"
+            line: "LogRotate {{ clamd_logrotate }}"
+          - regexp: "^#LocalSocket"
+            line: "LocalSocket {{ clamd_localsocket }}"
+    - name: "Add exclusings to ClamAV daemon service configuration file"
+      ansible.builtin.lineinfile:
+        dest: "{{ clamd_config }}"
+        insertafter: EOF
+        line: "{{ item }}"
+        state: present
+        with_items:
+          - "ExcludePath ^/proc/"
+          - "ExcludePath ^/sys/"
+          - "ExcludePath ^/dev/"
+          - "ExcludePath ^/run/"
+          - "ExcludePath ^/var/log/lastlog"
+          - "ExcludePath ^/remotehome/"
+  when: clamav_install
+
+- name: "Enable & Start ClamAV daemon service"
+  ansible.builtin.service:
+    name: "{{ clamd_service }}"
+    enabled: yes
+    state: started
+  when: ansible_os_family == 'Debian'
+
+- name: "Configure ClamAV scaning script"
+  block:
+    - name: "Configure ClamAV scaning script(s)"
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - src: clam_daily.sh.j2
+          dest: /usr/local/bin/clam_daily.sh
+        - src: clam_monthly.sh.j2
+          dest: /usr/local/bin/clam_monthly.sh
+    - name: "Configure Cronjob's for scaning script(s)"
+      ansible.builtin.cron:
+        name: "{{ item.name }}"
+        special_time: "{{ item.time }}"
+        job: "{{ item.dest }}"
+      with_items:
+        - name: "ClamAV Daily Scan"
+          time: daily
+          dest: /usr/local/bin/clam_daily.sh
+        - name: "ClamAV Monthly Scan"
+          time: monthly
+          dest: /usr/local/bin/clam_monthly.sh
+  when: clamav_install

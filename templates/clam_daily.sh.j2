@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#{{ ansible_managed | comment }}
+
+EMAIL_MSG="Please see the log file attached.";
+EMAIL_SUBJECT="ClamAV Daily Scan Results";
+EMAIL_FROM="{{ email_from }}";
+EMAIL_TO="{{ email_to }}";
+MAIL_SERVER="{{ smtp_server }}:{{ smtp_port }}"
+
+$(command -v find) / \
+    -type f \
+    -mtime -1 \
+    | grep -v "/proc" \
+    | grep -v "/sys" \
+    | grep -v "/dev" \
+    | grep -v "/run" \
+    | grep -v "/var/log/lastlog" \
+    | grep -v "nohup" >> /tmp/filelist.txt
+$(command -v clamdscan) --multiscan --fdpass --log /tmp/scanlog.txt --file-list=/tmp/filelist.txt
+echo "$EMAIL_MSG" | mail -a /tmp/scanlog.txt -s "$EMAIL_SUBJECT" -r "$EMAIL_FROM"  -S smtp="$MAIL_SERVER" "$EMAIL_TO"
+rm -f /tmp/filelist.txt
+rm -f /tmp/scanlog.txt
